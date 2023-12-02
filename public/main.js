@@ -12,32 +12,14 @@ initViewer(preview, ['Autodesk.DataVisualization']).then(async viewer => {
 
     // viewer.setGroundShadow(false)    
     preview.addEventListener('click', function (ev) {
-        console.clear()
+        // console.clear()
         let screenPoint = {x: ev.clientX,y: ev.clientY};
         // hit test
         var hitTest = viewer.impl.hitTest(screenPoint.x,screenPoint.y,true);
         // draw the temporary triangle face
         viewer.clearSelection()
         if(hitTest && hitTest.dbId===2928){
-            devices.forEach((el)=>{
-                const psource = new THREE.Vector3(hitTest.point.x,hitTest.point.y,-5)
-                const ptarget = new THREE.Vector3(el.position.x,el.position.y,-5)
-                const vray = new THREE.Vector3(ptarget.x - psource.x,ptarget.y - psource.y, 0)
-                vray.normalize ();
-                let max_dist = psource.distanceTo(ptarget)
-                let ray = new THREE.Raycaster( psource, vray, 0, max_dist )
-                let intersectResults = ray.intersectObjects ( wallMeshes, true )
-                // let intersectResults = viewer.impl.rayIntersect(ray.ray, false,wallIds);
-                // let nwalls = intersectResults.length;
-                // el.sensorValue = 
-                // max_dist * attenuation_per_m_in_air +
-                // nWalls * this._attenuation_per_wall
-                console.log(intersectResults)
-            })
-            
-            // viewer.clearSelection()
-            // console.clear()
-            console.log(hitTest)
+            update(hitTest);
         }
     });
     
@@ -46,10 +28,33 @@ initViewer(preview, ['Autodesk.DataVisualization']).then(async viewer => {
         // addHeatMap(viewer)
          setTimeout(()=>{
             addHeatMap(viewer)
-        },2000)
+        },1000)
     } );
    
 });
+
+let attenuation_per_m_in_air = 0.02;
+let attenuation_per_wall = 1.2;
+let ft = false;
+function update(hitTest) {
+    devices.forEach((el)=>{
+        const psource = new THREE.Vector3(hitTest.point.x,hitTest.point.y,-5)
+        const ptarget = new THREE.Vector3(el.position.x,el.position.y,-5)
+        const vray = new THREE.Vector3(ptarget.x - psource.x,ptarget.y - psource.y, 0)
+        vray.normalize ();
+        let max_dist = psource.distanceTo(ptarget)
+        let ray = new THREE.Raycaster( psource, vray, 0, max_dist )
+        let intersectResults = ray.intersectObjects ( wallMeshes, true )
+        // let intersectResults = viewer.impl.rayIntersect(ray.ray, false,wallIds);
+        let nwalls = intersectResults.length;
+        el.sensorValue = ((max_dist * attenuation_per_m_in_air) + (nwalls * attenuation_per_wall))/10
+        // console.log(el.sensorValue)
+    })
+    if (ft) {
+        dataVizExtn.updateSurfaceShading(getSensorValue);
+    } 
+    ft = true;
+}
 
 async function setupModelSelection(viewer, selectedUrn) {
     const models = document.getElementById('models');
@@ -94,6 +99,8 @@ function generateDevices(startpoints) {
         }
         startpoints.x+=5
     }
+    console.log('devices:')
+    console.log(devices)
 }
 let startpoints = {x:-25,y:25};
 generateDevices(startpoints);
@@ -252,7 +259,7 @@ function buildComponentGeometry (
     meshGeometry.applyMatrix(matrixWorld)
 
     return meshGeometry
-  }
+}
 function getLeafFragIds (model, leafId) {
     if (model.getData().instanceTree) {
       const it = model.getData().instanceTree
@@ -274,92 +281,60 @@ function getLeafFragIds (model, leafId) {
         ? [fragIds]
         : fragIds
     }
-  }
+}
 
 let wallIds;
 let wallMeshes;
 
 async function addHeatMap(viewer) {
-
     const model = viewer.model
     wallIds = await getComponentsByParentName('Walls', model)
-    console.log('wallIds:')
-    console.log(wallIds)
-    wallMeshes = wallIds.map((dbId) => {
-        return buildComponentMesh(
-          viewer, model, dbId)
-      })
-console.clear()
-// console.log('wallMeshes:')
-// console.log(wallMeshes)
-
+    wallMeshes = wallIds.map((dbId) => {return buildComponentMesh(viewer, model, dbId)})
+    let iv = {'point':{x:-25,y:25}}
+    update(iv)
     window.model = viewer.model;
     window.dataVizExtn = viewer.getExtension('Autodesk.DataVisualization');
-    // Given a model loaded from Autodesk Platform Services
     const structureInfo = new Autodesk.DataVisualization.Core.ModelStructureInfo(model);
-
-    // Generates `SurfaceShadingData` after assigning each device to a room.
     const shadingData = await structureInfo.generateSurfaceShadingData(devices);
-
-    // Use the resulting shading data to generate heatmap from.
     await dataVizExtn.setupSurfaceShading(model, shadingData, {
         type: "PlanarHeatmap",
         placementPosition: 0.0,
         slicingEnabled: false,
     });
-
-    // Register color stops for the heatmap. Along with the normalized sensor value
-    // in the range of [0.0, 1.0], `renderSurfaceShading` will interpolate the final
-    // heatmap color based on these specified colors.
-    const sensorColors = [0xff0000, 0x0000ff, 0x00ff00];
-
-    // Set heatmap colors for temperature
+    const sensorColors = [0x006800,0xff0000];
     const sensorType = "temperature";
     dataVizExtn.registerSurfaceShadingColors(sensorType, sensorColors);
-
-    // Function that provides a [0,1] value for the planar heatmap
-    function getSensorValue(surfaceShadingPoint, sensorType, pointData) {
-        /**
-         * The position of `surfaceShadingPoint` expressed in coordinate values
-         * with respect to the top-left corner of the underlying texture. For
-         * example, with a texture of dimensions 2048x1024 pixels, a point located
-         * at the mid-point of the texture would be { x: 1024, y: 512 }. The
-         * texture dimension is determined when the planar heatmap was set up.
-         */
-        const { x, y } = pointData;
-
-        /**
-         * The client implementation of `getSensorValue` callback can optionally
-         * make use of the coordinate values to compute the normalized value of
-         * this given `surfaceShadingPoint`.
-         */
-        // const sensorValue = computeSensorValue(x, y);
-        const sensorValue = Math.random();
-        return clamp(sensorValue, 0.0, 1.0);
-    }
-    // function getSensorValue() {
-    //     return Math.random(); 
-    // }
-    let clamp = function (value, lower, upper) {
-        if (value == undefined) {
-            return lower;
-        }
-
-        if (value > upper) {
-            return upper;
-        } else if (value < lower) {
-            return lower;
-        } else {
-            return value;
-        }
-    }
-    // This value can also be a room instead of a floor
-    // const floorName = "Floor [338116]";
     const floorName = "Varun's Room 103 [340619]";
     dataVizExtn.renderSurfaceShading(floorName, sensorType, getSensorValue);
     dataVizExtn.updateSurfaceShading(getSensorValue);
-    // setTimeout(()=>{},3000)
 }
 
+function getSensorValue(surfaceShadingPoint, sensorType, pointData) {
+    const { id } = surfaceShadingPoint;
+    const sensorValue = computeSensorValue(id)
+    return clamp(sensorValue, 0.0, 1.0);
+}
+
+function computeSensorValue(id) {
+    for (let i = 0; i < devices.length; i++) {
+        if(devices[i].id === id ){
+            return devices[i].sensorValue;
+        }
+    }
+}
+
+let clamp = function (value, lower, upper) {
+    if (value == undefined) {
+        return lower;
+    }
+
+    if (value > upper) {
+        return upper;
+    } else if (value < lower) {
+        return lower;
+    } else {
+        return value;
+    }
+}
 
 
