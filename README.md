@@ -1,7 +1,7 @@
 # dataviz-fader
 
 Sample [Autodesk APS](https://aps.autodesk.com) application attempting to provide a cleaner,
-easier-to-read implementation of the "View Models" application from https://tutorials.autodesk.io.
+easier-to-read implementation of fader using [Data Vizualization API](https://aps.autodesk.com/en/docs/dataviz/v1/developers_guide/overview/)
 
 ## Development
 
@@ -19,7 +19,6 @@ or [macOS Terminal](https://support.apple.com/guide/terminal/welcome/mac))
 - Setup environment variables:
   - `APS_CLIENT_ID` - your APS application client ID
   - `APS_CLIENT_SECRET` - your APS application client secret
-  - `APS_BUCKET` (optional) - name of APS bucket to store your designs in
 - Run the server: `npm start`
 
 > When using [Visual Studio Code](https://code.visualstudio.com),

@@ -27,8 +27,12 @@ initViewer(preview, ['Autodesk.DataVisualization']).then(async viewer => {
    
 });
 
+async function setupModelSelection(viewer, selectedUrn) {
+    loadModel(viewer, selectedUrn);
+}
+
 let attenuation_per_m_in_air = 0.002;
-let attenuation_per_wall = 1.2;
+let attenuation_per_wall = 0.6;
 let ft = false;
 function update(hitTest) {
     devices.forEach((el)=>{
@@ -50,10 +54,6 @@ function update(hitTest) {
     ft = true;
 }
 
-async function setupModelSelection(viewer, selectedUrn) {
-    loadModel(viewer, selectedUrn);
-}
-
 let devices = [];
 function generateDevices(startpoints) {
     let id = 0;
@@ -72,20 +72,73 @@ function generateDevices(startpoints) {
     }
 }
 
-let startpoints = {x:-25,y:25};
+//  Generate sensor drid.
+let startpoints = {x:-25,y:25}; //  Approximate Top left of the floor.
 generateDevices(startpoints);
 
+let wallIds;
+let wallMeshes;
+
+async function addHeatMap(viewer) {
+    const model = viewer.model
+    wallIds = await getComponentsByParentName('Walls', model)
+    wallMeshes = wallIds.map((dbId) => {return buildComponentMesh(viewer, model, dbId)})
+    let iv = {'point':{x:-25,y:25}}
+    update(iv)
+    window.model = viewer.model;
+    window.dataVizExtn = viewer.getExtension('Autodesk.DataVisualization');
+    const structureInfo = new Autodesk.DataVisualization.Core.ModelStructureInfo(model);
+    const shadingData = await structureInfo.generateSurfaceShadingData(devices);
+    await dataVizExtn.setupSurfaceShading(model, shadingData, {
+        type: "PlanarHeatmap",
+        minOpacity:1,
+        maxOpacity:0.8,
+        placementPosition: 0.0,
+        slicingEnabled: false,
+    });
+    const sensorColors = [0x003500,0xff0000];
+    const sensorType = "temperature";
+    dataVizExtn.registerSurfaceShadingColors(sensorType, sensorColors);
+    const floorName = "Varun's Room 103 [340619]";
+    dataVizExtn.renderSurfaceShading(floorName, sensorType, getSensorValue);
+}
+
+function getSensorValue(surfaceShadingPoint, sensorType, pointData) {
+    const { id } = surfaceShadingPoint;
+    const sensorValue = computeSensorValue(id)
+    return clamp(sensorValue, 0.0, 1.0);
+}
+
+function computeSensorValue(id) {
+    for (let i = 0; i < devices.length; i++) {
+        if(devices[i].id === id ){
+            return devices[i].sensorValue;
+        }
+    }
+}
+
+let clamp = function (value, lower, upper) {
+    if (value == undefined) {
+        return lower;
+    }
+
+    if (value > upper) {
+        return upper;
+    } else if (value < lower) {
+        return lower;
+    } else {
+        return value;
+    }
+}
+
+//  These 4 utility functions are taken from Phillipe's rcdb Toolkit extension
 function getComponentsByParentName (name, model) {
     const instanceTree = model.getData().instanceTree
-
     const rootId = instanceTree.getRootId()
-
     let parentId = 0
-
     instanceTree.enumNodeChildren(rootId,
       (childId) => {
         const nodeName = instanceTree.getNodeName(childId)
-
         if (nodeName.indexOf(name) > -1) {
           parentId = childId
         }
@@ -160,32 +213,22 @@ function buildComponentGeometry (
     // geometry. This util method will return all fragIds
     // associated with that specific dbId
     const fragIds = getLeafFragIds(model, dbId)
-
     let matrixWorld = null
-
     const meshGeometry = new THREE.Geometry()
-
     fragIds.forEach((fragId) => {
       // for each fragId, get the proxy in order to access
       // THREE geometry
       const renderProxy =
         viewer.impl.getRenderProxy(
           model, fragId)
-
       matrixWorld = matrixWorld || renderProxy.matrixWorld
-
       const geometry = renderProxy.geometry
-
       const attributes = geometry.attributes
-
       const positions = geometry.vb
         ? geometry.vb
         : attributes.position.array
-
       const indices = attributes.index.array || geometry.ib
-
       const stride = geometry.vb ? geometry.vbstride : 3
-
       const offsets = [{
         count: indices.length,
         index: 0,
@@ -230,82 +273,24 @@ function buildComponentGeometry (
 
     return meshGeometry
 }
+
 function getLeafFragIds (model, leafId) {
     if (model.getData().instanceTree) {
       const it = model.getData().instanceTree
-
       const fragIds = []
-
       it.enumNodeFragments(
         leafId, (fragId) => {
           fragIds.push(fragId)
         })
-
       return fragIds
     } else {
       const fragments = model.getData().fragments
-
       const fragIds = fragments.dbId2fragId[leafId]
-
       return !Array.isArray(fragIds)
         ? [fragIds]
         : fragIds
     }
 }
 
-let wallIds;
-let wallMeshes;
-
-async function addHeatMap(viewer) {
-    const model = viewer.model
-    wallIds = await getComponentsByParentName('Walls', model)
-    wallMeshes = wallIds.map((dbId) => {return buildComponentMesh(viewer, model, dbId)})
-    let iv = {'point':{x:-25,y:25}}
-    update(iv)
-    window.model = viewer.model;
-    window.dataVizExtn = viewer.getExtension('Autodesk.DataVisualization');
-    const structureInfo = new Autodesk.DataVisualization.Core.ModelStructureInfo(model);
-    const shadingData = await structureInfo.generateSurfaceShadingData(devices);
-    await dataVizExtn.setupSurfaceShading(model, shadingData, {
-        type: "PlanarHeatmap",
-        minOpacity:1,
-        placementPosition: 0.0,
-        slicingEnabled: false,
-    });
-    const sensorColors = [0x006800,0xff0000];
-    const sensorType = "temperature";
-    dataVizExtn.registerSurfaceShadingColors(sensorType, sensorColors);
-    const floorName = "Varun's Room 103 [340619]";
-    dataVizExtn.renderSurfaceShading(floorName, sensorType, getSensorValue);
-    // dataVizExtn.updateSurfaceShading(getSensorValue);
-}
-
-function getSensorValue(surfaceShadingPoint, sensorType, pointData) {
-    const { id } = surfaceShadingPoint;
-    const sensorValue = computeSensorValue(id)
-    return clamp(sensorValue, 0.0, 1.0);
-}
-
-function computeSensorValue(id) {
-    for (let i = 0; i < devices.length; i++) {
-        if(devices[i].id === id ){
-            return devices[i].sensorValue;
-        }
-    }
-}
-
-let clamp = function (value, lower, upper) {
-    if (value == undefined) {
-        return lower;
-    }
-
-    if (value > upper) {
-        return upper;
-    } else if (value < lower) {
-        return lower;
-    } else {
-        return value;
-    }
-}
 
 
