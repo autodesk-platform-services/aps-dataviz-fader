@@ -5,13 +5,13 @@ import { initViewer, loadModel } from './viewer.js';
 const preview = document.getElementById('preview');
 
 initViewer(preview, ['Autodesk.DataVisualization']).then(async viewer => {
-    const urn = window.location.hash ? window.location.hash.substr(1) : null;
+    const urn = 'dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6aW90X2ZhZGVyL091dXB1dCUyMFJldml0JTIwUm9vbS5ydnQ'
     await setupModelSelection(viewer, urn);
     viewer.setGroundReflection(false)
     viewer.disableHighlight(true)
 
     // viewer.setGroundShadow(false)    
-    preview.addEventListener('click', function (ev) {
+    preview.addEventListener('mousemove', function (ev) {
         // console.clear()
         let screenPoint = {x: ev.clientX,y: ev.clientY};
         // hit test
@@ -33,7 +33,7 @@ initViewer(preview, ['Autodesk.DataVisualization']).then(async viewer => {
    
 });
 
-let attenuation_per_m_in_air = 0.02;
+let attenuation_per_m_in_air = 0.002;
 let attenuation_per_wall = 1.2;
 let ft = false;
 function update(hitTest) {
@@ -57,30 +57,7 @@ function update(hitTest) {
 }
 
 async function setupModelSelection(viewer, selectedUrn) {
-    const models = document.getElementById('models');
-    models.innerHTML = '';
-    const resp = await fetch('/api/models');
-    if (resp.ok) {
-        for (const model of await resp.json()) {
-            const option = document.createElement('option');
-            option.innerText = model.name;
-            option.setAttribute('value', model.urn);
-            if (model.urn === selectedUrn) {
-                option.setAttribute('selected', 'true');
-            }
-            models.appendChild(option);
-        }
-    } else {
-        alert('Could not list models. See the console for more details.');
-        console.error(await resp.text());
-    }
-    models.onchange = async () => {
-        window.location.hash = models.value;
-        loadModel(viewer, models.value);
-    }
-    if (!viewer.model && models.value) {
-        models.onchange();
-    }
+    loadModel(viewer, selectedUrn);
 }
 
 let devices = [];
@@ -99,8 +76,6 @@ function generateDevices(startpoints) {
         }
         startpoints.x+=5
     }
-    console.log('devices:')
-    console.log(devices)
 }
 let startpoints = {x:-25,y:25};
 generateDevices(startpoints);
@@ -298,6 +273,7 @@ async function addHeatMap(viewer) {
     const shadingData = await structureInfo.generateSurfaceShadingData(devices);
     await dataVizExtn.setupSurfaceShading(model, shadingData, {
         type: "PlanarHeatmap",
+        minOpacity:1,
         placementPosition: 0.0,
         slicingEnabled: false,
     });
@@ -306,7 +282,7 @@ async function addHeatMap(viewer) {
     dataVizExtn.registerSurfaceShadingColors(sensorType, sensorColors);
     const floorName = "Varun's Room 103 [340619]";
     dataVizExtn.renderSurfaceShading(floorName, sensorType, getSensorValue);
-    dataVizExtn.updateSurfaceShading(getSensorValue);
+    // dataVizExtn.updateSurfaceShading(getSensorValue);
 }
 
 function getSensorValue(surfaceShadingPoint, sensorType, pointData) {
