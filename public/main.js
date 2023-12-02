@@ -9,14 +9,9 @@ initViewer(preview, ['Autodesk.DataVisualization']).then(async viewer => {
     await setupModelSelection(viewer, urn);
     viewer.setGroundReflection(false)
     viewer.disableHighlight(true)
-
-    // viewer.setGroundShadow(false)    
     preview.addEventListener('mousemove', function (ev) {
-        // console.clear()
         let screenPoint = {x: ev.clientX,y: ev.clientY};
-        // hit test
         var hitTest = viewer.impl.hitTest(screenPoint.x,screenPoint.y,true);
-        // draw the temporary triangle face
         viewer.clearSelection()
         if(hitTest && hitTest.dbId===2928){
             update(hitTest);
@@ -24,11 +19,10 @@ initViewer(preview, ['Autodesk.DataVisualization']).then(async viewer => {
     });
     
     viewer.addEventListener(Autodesk.Viewing.OBJECT_TREE_CREATED_EVENT, ()=>{
-        
-        // addHeatMap(viewer)
+        // settimout is temporary, need to listen to geometry created event.
          setTimeout(()=>{
             addHeatMap(viewer)
-        },1000)
+        },500)
     } );
    
 });
@@ -77,6 +71,7 @@ function generateDevices(startpoints) {
         startpoints.x+=5
     }
 }
+
 let startpoints = {x:-25,y:25};
 generateDevices(startpoints);
 
@@ -99,7 +94,7 @@ function getComponentsByParentName (name, model) {
     return parentId > 0
       ? getLeafNodes(model, parentId)
       : []
-  }
+}
 
 function getLeafNodes (model, dbIds) {
     return new Promise((resolve, reject) => {
@@ -138,7 +133,7 @@ function getLeafNodes (model, dbIds) {
         return reject(ex)
       }
     })
-  }  
+}  
 
 function buildComponentMesh (
     viewer, model, dbId, faceFilter, material) {
@@ -156,7 +151,7 @@ function buildComponentMesh (
     mesh.dbId = dbId
 
     return mesh
-  }
+}
 
 function buildComponentGeometry (
     viewer, model, dbId, faceFilter) {
