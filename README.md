@@ -24,3 +24,9 @@ or [macOS Terminal](https://support.apple.com/guide/terminal/welcome/mac))
 > When using [Visual Studio Code](https://code.visualstudio.com),
 you can specify the env. variables listed above in a _.env_ file in this
 folder, and run & debug the application directly from the editor.
+
+## Written by
+
+Varun Patil [@VarunPatil578](https://twitter.com/VarunPatil578)
+
+
