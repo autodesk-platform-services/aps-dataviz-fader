@@ -3,7 +3,7 @@
 Sample [Autodesk APS](https://aps.autodesk.com) application attempting to provide a cleaner,
 easier-to-read implementation of fader application using [Data Vizualization API](https://aps.autodesk.com/en/docs/dataviz/v1/developers_guide/overview/)
 
-![](https://github.com/aps-dataviz-fader/img/aps-dataviz-fader.gif)
+![](https://github.com/autodesk-platform-services/aps-dataviz-fader/blob/main/public/img/aps-dataviz-fader.gif)
 
 ## Development
 
