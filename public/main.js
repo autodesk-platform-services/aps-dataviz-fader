@@ -32,7 +32,7 @@ async function setupModelSelection(viewer, selectedUrn) {
 }
 
 let attenuation_per_m_in_air = 0.002;
-let attenuation_per_wall = 0.6;
+let attenuation_per_wall = 0.4;
 let ft = false;
 function update(hitTest) {
     devices.forEach((el)=>{
