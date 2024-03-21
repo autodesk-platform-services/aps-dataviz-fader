@@ -2,10 +2,13 @@
 
 import { initViewer, loadModel } from './viewer.js';
 
+// Model specific information, need to change if model is different.
+let ms = {"viewport":{"eye":[18.146831933781694,-14.165346246584889,76.07830126353888],"target":[1.6499386026260514,0.18586653986963253,-0.3213555126152032],"up":[-0.7253454990907704,0.6310029041340419,0.27515312450191487]}}
+const urn = 'dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6aW90X2ZhZGVyL091dXB1dCUyMFJldml0JTIwUm9vbS5ydnQ'
+// 
+
 const preview = document.getElementById('preview');
-let ms = {"viewport":{"name":"","eye":[18.146831933781694,-14.165346246584889,76.07830126353888],"target":[1.6499386026260514,0.18586653986963253,-0.3213555126152032],"up":[-0.7253454990907704,0.6310029041340419,0.27515312450191487],"worldUpVector":[0,0,1],"pivotPoint":[0,0,0],"distanceToOrbit":79.46705199978018,"aspectRatio":3.217877094972067,"projection":"orthographic","isOrthographic":true,"orthographicHeight":79.4670519997802}}
 initViewer(preview, ['Autodesk.DataVisualization']).then(async viewer => {
-    const urn = 'dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6aW90X2ZhZGVyL091dXB1dCUyMFJldml0JTIwUm9vbS5ydnQ'
     await setupModelSelection(viewer, urn);
     viewer.setGroundReflection(false)
     viewer.disableHighlight(true)
