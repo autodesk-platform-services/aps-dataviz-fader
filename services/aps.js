@@ -1,23 +1,15 @@
-const fs = require('fs');
-const { AuthClientTwoLegged } = require('forge-apis');
-
+const { SdkManagerBuilder } = require('@aps_sdk/autodesk-sdkmanager');
+const { AuthenticationClient, Scopes } = require('@aps_sdk/authentication');
 const { APS_CLIENT_ID, APS_CLIENT_SECRET } = process.env;
-if (!APS_CLIENT_ID || !APS_CLIENT_SECRET) {
-    console.warn('Missing some of the environment variables.');
-    process.exit(1);
-}
 
-const PUBLIC_TOKEN_SCOPES = ['viewables:read'];
+const sdk = SdkManagerBuilder.create().build();
+const authenticationClient = new AuthenticationClient(sdk);
 
-let publicAuthClient = new AuthClientTwoLegged(APS_CLIENT_ID, APS_CLIENT_SECRET, PUBLIC_TOKEN_SCOPES, true);
+const service = module.exports = {};
 
-async function getPublicToken() {
-    if (!publicAuthClient.isAuthorized()) {
-        await publicAuthClient.authenticate();
-    }
-    return publicAuthClient.getCredentials();
-}
-
-module.exports = {
-    getPublicToken
+service.getPublicToken = async () => {
+    const credentials = await authenticationClient.getTwoLeggedToken(APS_CLIENT_ID, APS_CLIENT_SECRET, [
+        Scopes.DataRead
+    ]);
+    return credentials;
 };
