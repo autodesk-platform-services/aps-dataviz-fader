@@ -13,9 +13,9 @@
   "author": "Varun Patil <twitter.com/varun.patil578>",
   "license": "MIT",
   "dependencies": {
-    "express": "^4.17.1",
-    "express-formidable": "^1.2.0",
-    "forge-apis": "^0.8.6"
+    "@aps_sdk/authentication": "^0.1.0-beta.1",
+    "@aps_sdk/autodesk-sdkmanager": "^0.0.7-beta.1",
+    "express": "^4.17.1"
   },
   "devDependencies": {
     "@types/forge-viewer": "^7.55.0"
