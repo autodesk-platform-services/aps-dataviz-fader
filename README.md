@@ -1,3 +1,6 @@
+<!-- archived-notice -->
+> **This repository is archived.** Archived repositories are not maintained or supported.
+
 # aps-dataviz-fader
 
 Sample [Autodesk APS](https://aps.autodesk.com) application attempting to provide a cleaner,
